@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIRAL STUDIO — Équipe IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050508;
+    --panel: #0d0d14;
+    --border: #1a1a2e;
+    --accent: #ff3cac;
+    --accent2: #784ba0;
+    --accent3: #2b86c5;
+    --cyan: #00f5d4;
+    --yellow: #f9c74f;
+    --text: #e8e8f0;
+    --muted: #555570;
+    --green: #06d6a0;
+    --red: #ef233c;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  /* Animated bg */
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background: radial-gradient(ellipse 80% 60% at 20% 0%, rgba(255,60,172,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,245,212,0.05) 0%, transparent 60%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* HEADER */
+  header {
+    position: sticky; top:0; z-index:100;
+    background: rgba(5,5,8,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex; align-items:center; justify-content:space-between;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight:800;
+    font-size:22px;
+    letter-spacing:-1px;
+  }
+  .logo span { color: var(--accent); }
+  .logo em { color: var(--cyan); font-style:normal; }
+  .status-bar { display:flex; gap:16px; align-items:center; }
+  .status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .status-text { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:2px; }
+  .score-badge {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    padding:4px 14px; border-radius:20px;
+    font-size:12px; font-weight:700;
+    font-family:'Syne',sans-serif;
+  }
+
+  /* LAYOUT */
+  .container { position:relative; z-index:1; padding:32px; max-width:1400px; margin:0 auto; }
+
+  /* TOPIC INPUT */
+  .topic-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius:16px;
+    padding:28px 32px;
+    margin-bottom:28px;
+    position:relative;
+    overflow:hidden;
+  }
+  .topic-section::before {
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan), var(--accent));
+    background-size:200% 100%;
+    animation: shimmer 3s linear infinite;
+  }
+  @keyframes shimmer { 0%{background-position:0% 0%;} 100%{background-position:200% 0%;} }
+  .section-label {
+    font-size:10px; text-transform:uppercase; letter-spacing:3px; color:var(--muted); margin-bottom:14px;
+  }
+  .topic-row { display:flex; gap:14px; align-items:center; }
+  .topic-input {
+    flex:1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius:10px;
+    padding:14px 20px;
+    font-family:'Space Mono',monospace;
+    font-size:14px;
+    color:var(--text);
+    outline:none;
+    transition: border-color 0.2s;
+  }
+  .topic-input:focus { border-color: var(--accent); }
+  .topic-input::placeholder { color: var(--muted); }
+  .platform-select {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    font-family:'Space Mono',monospace;
+    font-size:13px;
+    color:var(--text);
+    outline:none;
+    cursor:pointer;
+  }
+  .run-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border:none; border-radius:10px;
+    padding:14px 28px;
+    font-family:'Syne',sans-serif;
+    font-weight:800; font-size:14px;
+    color:#fff; cursor:pointer;
+    letter-spacing:1px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space:nowrap;
+  }
+  .run-btn:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(255,60,172,0.4); }
+  .run-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+  /* AGENTS GRID */
+  .agents-grid {
+    display:grid;
+    grid-template-columns: 280px 1fr;
+    gap:20px;
+    margin-bottom:28px;
+  }
+
+  /* MANAGER CARD */
+  .manager-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius:16px;
+    padding:24px;
+    position:relative;
+    overflow:hidden;
+  }
+  .manager-card::after {
+    content:'';
+    position:absolute;
+    top:-60px; right:-60px;
+    width:180px; height:180px;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(255,60,172,0.12) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .agent-icon {
+    width:52px; height:52px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; margin-bottom:14px;
+  }
+  .icon-manager { background: linear-gradient(135deg,#ff3cac22,#ff3cac44); border:1px solid #ff3cac44; }
+  .icon-sprint { background: linear-gradient(135deg,#f9c74f22,#f9c74f44); border:1px solid #f9c74f44; }
+  .icon-voice { background: linear-gradient(135deg,#06d6a022,#06d6a044); border:1px solid #06d6a044; }
+  .icon-visual { background: linear-gradient(135deg,#784ba022,#784ba044); border:1px solid #784ba044; }
+  .icon-editor { background: linear-gradient(135deg,#2b86c522,#2b86c544); border:1px solid #2b86c544; }
+
+  .agent-name {
+    font-family:'Syne',sans-serif;
+    font-weight:800; font-size:16px;
+    margin-bottom:4px;
+  }
+  .agent-role { font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin-bottom:14px; }
+  .agent-status {
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:11px; padding:4px 10px; border-radius:20px;
+    background:rgba(255,255,255,0.05);
+    margin-bottom:16px;
+  }
+  .status-idle .dot { background:var(--muted); }
+  .status-working .dot { background:var(--yellow); animation:pulse 1s infinite; }
+  .status-done .dot { background:var(--green); }
+  .status-error .dot { background:var(--red); }
+  .dot { width:6px; height:6px; border-radius:50%; }
+  .agent-log {
+    font-size:11px; color:var(--muted);
+    line-height:1.7;
+    max-height:120px;
+    overflow-y:auto;
+    border-top:1px solid var(--border);
+    padding-top:12px;
+  }
+  .agent-log .line { margin-bottom:4px; }
+  .agent-log .line.new { color:var(--cyan); }
+  .agent-log .line.done { color:var(--green); }
+  .agent-log .line.error { color:var(--red); }
+
+  /* WORKER AGENTS */
+  .workers-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius:16px;
+    padding:24px;
+  }
+  .workers-grid {
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:14px;
+  }
+  .worker-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius:12px;
+    padding:18px;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+  .worker-card.active {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(255,60,172,0.1);
+  }
+  .worker-card.done-card { border-color: var(--green); }
+
+  .worker-progress {
+    margin-top:12px;
+    height:3px; background:var(--border); border-radius:2px; overflow:hidden;
+  }
+  .progress-fill {
+    height:100%; border-radius:2px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+  .worker-output {
+    font-size:10px; color:var(--muted);
+    margin-top:10px; line-height:1.6;
+    min-height:36px;
+  }
+
+  /* OUTPUT SECTION */
+  .output-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius:16px;
+    padding:28px 32px;
+    margin-bottom:28px;
+  }
+  .output-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .output-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .output-block {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
+  }
+  .output-block h4 { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin-bottom:12px; }
+  .output-text {
+    font-size:13px; line-height:1.8; color:var(--text);
+    white-space:pre-wrap;
+    max-height:180px; overflow-y:auto;
+  }
+  .output-text.typing::after {
+    content:'▋'; animation:blink 0.8s step-end infinite; color:var(--cyan);
+  }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+  .video-preview {
+    background: linear-gradient(135deg, #0d0d20, #12121f);
+    border-radius:12px;
+    aspect-ratio:9/16;
+    max-height:280px;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:12px;
+    position:relative; overflow:hidden;
+    border: 1px solid var(--border);
+  }
+  .video-preview .play-icon { font-size:42px; opacity:0.3; }
+  .video-preview .video-label { font-size:11px; color:var(--muted); text-align:center; }
+  .video-preview.has-content { border-color:var(--cyan); }
+  .video-preview.has-content .play-icon { opacity:1; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+  .video-overlay {
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.8) 100%);
+  }
+  .video-meta {
+    position:absolute; bottom:12px; left:12px; right:12px;
+    font-size:11px; color:#fff;
+  }
+  .video-stats { display:flex; gap:12px; margin-top:6px; font-size:10px; color:rgba(255,255,255,0.5); }
+
+  /* LEARNING SECTION */
+  .learning-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius:16px;
+    padding:24px 28px;
+    margin-bottom:28px;
+  }
+  .learning-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px; }
+  .learning-card {
+    background:rgba(255,255,255,0.02);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px;
+  }
+  .learning-card h4 { font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin-bottom:8px; }
+  .metric-big { font-family:'Syne',sans-serif; font-weight:800; font-size:28px; margin-bottom:4px; }
+  .metric-label { font-size:10px; color:var(--muted); }
+  .metric-trend { font-size:11px; color:var(--green); margin-top:6px; }
+
+  /* HISTORY */
+  .history-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius:16px;
+    padding:24px 28px;
+  }
+  .history-list { margin-top:16px; display:flex; flex-direction:column; gap:10px; }
+  .history-item {
+    background:rgba(255,255,255,0.02);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 18px;
+    display:flex; align-items:center; gap:16px;
+    cursor:pointer;
+    transition: border-color 0.2s;
+  }
+  .history-item:hover { border-color:var(--accent); }
+  .history-thumbnail {
+    width:36px; height:36px; border-radius:8px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; flex-shrink:0;
+  }
+  .history-info { flex:1; }
+  .history-title { font-size:13px; margin-bottom:3px; }
+  .history-meta { font-size:10px; color:var(--muted); }
+  .history-score {
+    font-family:'Syne',sans-serif; font-weight:800;
+    font-size:16px; color:var(--cyan);
+  }
+  .tag {
+    display:inline-block; padding:2px 8px; border-radius:4px;
+    font-size:9px; text-transform:uppercase; letter-spacing:1px;
+    background:rgba(255,60,172,0.15); color:var(--accent);
+    border:1px solid rgba(255,60,172,0.2);
+  }
+
+  /* COPY BTN */
+  .copy-btn {
+    background: rgba(0,245,212,0.1);
+    border: 1px solid rgba(0,245,212,0.2);
+    border-radius:7px; padding:6px 14px;
+    font-family:'Space Mono',monospace;
+    font-size:11px; color:var(--cyan);
+    cursor:pointer; transition:background 0.2s;
+  }
+  .copy-btn:hover { background:rgba(0,245,212,0.2); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .section-title {
+    font-family:'Syne',sans-serif; font-weight:800;
+    font-size:16px; display:flex; align-items:center; gap:10px;
+  }
+  .section-title .num {
+    width:24px; height:24px; border-radius:6px;
+    background:rgba(255,60,172,0.15); border:1px solid rgba(255,60,172,0.2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:var(--accent);
+  }
+
+  /* API KEY BANNER */
+  .api-banner {
+    background: linear-gradient(135deg, rgba(249,199,79,0.08), rgba(249,199,79,0.03));
+    border: 1px solid rgba(249,199,79,0.25);
+    border-radius:14px;
+    padding:20px 24px;
+    margin-bottom:24px;
+    display:flex; align-items:center; gap:16px;
+    flex-wrap:wrap;
+  }
+  .api-banner.valid {
+    background: linear-gradient(135deg, rgba(6,214,160,0.08), rgba(6,214,160,0.03));
+    border-color: rgba(6,214,160,0.25);
+  }
+  .api-icon { font-size:22px; flex-shrink:0; }
+  .api-info { flex:1; min-width:200px; }
+  .api-info h3 { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; margin-bottom:3px; color:var(--yellow); }
+  .api-banner.valid .api-info h3 { color:var(--green); }
+  .api-info p { font-size:10px; color:var(--muted); }
+  .api-input-row { display:flex; gap:10px; align-items:center; flex:2; min-width:280px; }
+  .api-input {
+    flex:1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(249,199,79,0.2);
+    border-radius:8px;
+    padding:10px 14px;
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--text);
+    outline:none;
+    transition: border-color 0.2s;
+    letter-spacing:1px;
+  }
+  .api-input:focus { border-color: var(--yellow); }
+  .api-save-btn {
+    background: rgba(249,199,79,0.15);
+    border: 1px solid rgba(249,199,79,0.3);
+    border-radius:8px; padding:10px 18px;
+    font-family:'Syne',sans-serif;
+    font-size:12px; font-weight:700;
+    color:var(--yellow); cursor:pointer;
+    transition:background 0.2s; white-space:nowrap;
+  }
+  .api-save-btn:hover { background:rgba(249,199,79,0.25); }
+  .api-link { font-size:10px; color:var(--accent); text-decoration:none; }
+  .api-link:hover { text-decoration:underline; }
+
+  .divider { height:1px; background:var(--border); margin:20px 0; }
+
+  .platform-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:3px 10px; border-radius:20px; font-size:10px;
+    background:rgba(255,255,255,0.05); border:1px solid var(--border);
+    margin-right:6px;
+  }
+
+  .hooks-list { display:flex; flex-direction:column; gap:8px; }
+  .hook-item {
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius:6px; padding:10px 14px;
+    font-size:12px; line-height:1.6;
+  }
+  .hook-score {
+    font-size:10px; color:var(--yellow); margin-top:4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span>VIRAL</span><em>STUDIO</em> <span style="color:var(--muted);font-size:14px;font-weight:400">// IA Team</span></div>
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <div class="status-text">5 agents actifs</div>
+    <div class="score-badge" id="globalScore">Score viral: 0</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- API KEY BANNER -->
+  <div class="api-banner" id="apiBanner">
+    <div class="api-icon">🔑</div>
+    <div class="api-info">
+      <h3 id="apiTitle">Clé API Anthropic requise</h3>
+      <p>Gratuit pour commencer · <a class="api-link" href="https://console.anthropic.com" target="_blank">Obtenir une clé → console.anthropic.com</a></p>
+    </div>
+    <div class="api-input-row">
+      <input type="password" class="api-input" id="apiKeyInput" placeholder="sk-ant-api03-…" autocomplete="off">
+      <button class="api-save-btn" onclick="saveApiKey()">💾 Sauvegarder</button>
+    </div>
+  </div>
+
+  <!-- TOPIC -->
+  <div class="topic-section">
+    <div class="section-label">// Nouvelle mission</div>
+    <div class="topic-row">
+      <input type="text" class="topic-input" id="topicInput"
+        placeholder="Ex: 5 secrets que les riches ne veulent pas que tu saches…"
+        value="5 faits sur l'espace qui vont te couper le souffle">
+      <select class="platform-select" id="platformSelect">
+        <option value="tiktok">📱 TikTok</option>
+        <option value="instagram">📸 Instagram Reels</option>
+        <option value="youtube">▶️ YouTube Shorts</option>
+      </select>
+      <button class="run-btn" id="runBtn" onclick="startPipeline()">⚡ LANCER L'ÉQUIPE</button>
+    </div>
+  </div>
+
+  <!-- AGENTS -->
+  <div class="agents-grid">
+    <!-- MANAGER -->
+    <div class="manager-card">
+      <div class="agent-icon icon-manager">🧠</div>
+      <div class="agent-name">MANAGER IA</div>
+      <div class="agent-role">Chef d'orchestre</div>
+      <div class="agent-status status-idle" id="managerStatus">
+        <div class="dot"></div>
+        <span id="managerStatusText">En attente</span>
+      </div>
+      <div class="agent-log" id="managerLog">
+        <div class="line">» Système prêt. En attente d'une mission.</div>
+        <div class="line">» Modèle: claude-sonnet-4</div>
+        <div class="line">» Apprentissage actif: v1.4</div>
+      </div>
+    </div>
+
+    <!-- WORKERS -->
+    <div class="workers-panel">
+      <div class="section-label" style="margin-bottom:16px;">// Équipe de production</div>
+      <div class="workers-grid">
+        <!-- Sprint Agent -->
+        <div class="worker-card" id="card-sprint">
+          <div class="agent-icon icon-sprint" style="width:40px;height:40px;font-size:18px;margin-bottom:10px;">⚡</div>
+          <div class="agent-name" style="font-size:14px;">SPRINT</div>
+          <div class="agent-role">Script & structure</div>
+          <div class="agent-status status-idle" id="sprintStatus"><div class="dot"></div><span id="sprintStatusText">Idle</span></div>
+          <div class="worker-progress"><div class="progress-fill" id="sprintProg"></div></div>
+          <div class="worker-output" id="sprintOutput">En attente du manager…</div>
+        </div>
+        <!-- Voice Agent -->
+        <div class="worker-card" id="card-voice">
+          <div class="agent-icon icon-voice" style="width:40px;height:40px;font-size:18px;margin-bottom:10px;">🎙️</div>
+          <div class="agent-name" style="font-size:14px;">VOICE</div>
+          <div class="agent-role">Narration & ton</div>
+          <div class="agent-status status-idle" id="voiceStatus"><div class="dot"></div><span id="voiceStatusText">Idle</span></div>
+          <div class="worker-progress"><div class="progress-fill" id="voiceProg"></div></div>
+          <div class="worker-output" id="voiceOutput">En attente du script…</div>
+        </div>
+        <!-- Visual Agent -->
+        <div class="worker-card" id="card-visual">
+          <div class="agent-icon icon-visual" style="width:40px;height:40px;font-size:18px;margin-bottom:10px;">🎨</div>
+          <div class="agent-name" style="font-size:14px;">VISUAL</div>
+          <div class="agent-role">Visuels & prompts</div>
+          <div class="agent-status status-idle" id="visualStatus"><div class="dot"></div><span id="visualStatusText">Idle</span></div>
+          <div class="worker-progress"><div class="progress-fill" id="visualProg"></div></div>
+          <div class="worker-output" id="visualOutput">En attente du script…</div>
+        </div>
+        <!-- Editor Agent -->
+        <div class="worker-card" id="card-editor">
+          <div class="agent-icon icon-editor" style="width:40px;height:40px;font-size:18px;margin-bottom:10px;">🎬</div>
+          <div class="agent-name" style="font-size:14px;">EDITOR</div>
+          <div class="agent-role">Montage & viral</div>
+          <div class="agent-status status-idle" id="editorStatus"><div class="dot"></div><span id="editorStatusText">Idle</span></div>
+          <div class="worker-progress"><div class="progress-fill" id="editorProg"></div></div>
+          <div class="worker-output" id="editorOutput">En attente des assets…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="output-section" id="outputSection" style="display:none;">
+    <div class="output-header">
+      <div class="section-title"><div class="num">↓</div> Production finale</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span id="platformBadges"></span>
+        <button class="copy-btn" onclick="copyScript()">Copier script</button>
+      </div>
+    </div>
+    <div class="output-grid">
+      <div>
+        <div class="output-block">
+          <h4>🎣 Hooks viraux générés</h4>
+          <div class="hooks-list" id="hooksOutput"></div>
+        </div>
+        <div class="output-block" style="margin-top:14px;">
+          <h4>📝 Script complet</h4>
+          <div class="output-text" id="scriptOutput"></div>
+        </div>
+      </div>
+      <div>
+        <div class="output-block">
+          <h4>🎙️ Direction voix</h4>
+          <div class="output-text" id="voiceOutput2"></div>
+        </div>
+        <div class="output-block" style="margin-top:14px;">
+          <h4>🎨 Plan visuel (storyboard IA)</h4>
+          <div class="output-text" id="visualOutput2"></div>
+        </div>
+        <div class="output-block" style="margin-top:14px;">
+          <h4>🎬 Instructions montage</h4>
+          <div class="output-text" id="editorOutput2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEARNING -->
+  <div class="learning-section">
+    <div class="section-title"><div class="num">📈</div> Apprentissage continu</div>
+    <div class="learning-grid">
+      <div class="learning-card">
+        <h4>Vidéos produites</h4>
+        <div class="metric-big" id="metricVideos">0</div>
+        <div class="metric-label">Total sessions</div>
+        <div class="metric-trend" id="metricTrend1">—</div>
+      </div>
+      <div class="learning-card">
+        <h4>Score viral moyen</h4>
+        <div class="metric-big" id="metricScore" style="color:var(--accent)">—</div>
+        <div class="metric-label">Sur 100</div>
+        <div class="metric-trend" id="metricTrend2">—</div>
+      </div>
+      <div class="learning-card">
+        <h4>Insights appris</h4>
+        <div class="metric-big" id="metricInsights" style="color:var(--cyan)">0</div>
+        <div class="metric-label">Patterns viraux</div>
+        <div class="metric-trend" id="metricTrend3">—</div>
+      </div>
+    </div>
+    <div style="margin-top:16px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; padding:16px;">
+      <div class="section-label" style="margin-bottom:10px;">// Mémoire des agents (patterns viraux appris)</div>
+      <div id="learningLog" style="font-size:11px; color:var(--muted); line-height:1.9;">
+        Aucun pattern appris encore. Lancez une première vidéo pour commencer l'apprentissage.
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="history-section" id="historySection" style="display:none;">
+    <div class="section-title"><div class="num">⏱</div> Historique des productions</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+</div>
+
+<script>
+const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+let state = {
+  videos: [],
+  insights: [],
+  totalScore: 0,
+  running: false
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('viralStudio');
+    if (s) { state = { ...state, ...JSON.parse(s) }; }
+  } catch(e){}
+  renderState();
+}
+
+function saveState() {
+  try { localStorage.setItem('viralStudio', JSON.stringify(state)); } catch(e){}
+}
+
+function renderState() {
+  document.getElementById('metricVideos').textContent = state.videos.length;
+  if (state.videos.length > 0) {
+    const avg = Math.round(state.videos.reduce((a,v)=>a+v.score,0)/state.videos.length);
+    document.getElementById('metricScore').textContent = avg;
+    document.getElementById('globalScore').textContent = `Score viral: ${avg}`;
+  }
+  document.getElementById('metricInsights').textContent = state.insights.length;
+  if (state.insights.length > 0) {
+    document.getElementById('learningLog').innerHTML = state.insights.map(i=>
+      `<div>✦ ${i}</div>`
+    ).join('');
+    document.getElementById('metricTrend3').textContent = `+${state.insights.length} patterns actifs`;
+  }
+  if (state.videos.length > 0) {
+    document.getElementById('historySection').style.display = 'block';
+    document.getElementById('historyList').innerHTML = [...state.videos].reverse().slice(0,5).map(v=>`
+      <div class="history-item">
+        <div class="history-thumbnail">🎬</div>
+        <div class="history-info">
+          <div class="history-title">${v.topic}</div>
+          <div class="history-meta">${v.platform} • ${v.date} <span class="tag">${v.tag}</span></div>
+        </div>
+        <div class="history-score">${v.score}</div>
+      </div>
+    `).join('');
+  }
+  if (state.videos.length >= 2) {
+    const last = state.videos.slice(-2);
+    const diff = last[1].score - last[0].score;
+    document.getElementById('metricTrend2').textContent = diff >= 0 ? `↑ +${diff} pts vs dernière` : `↓ ${diff} pts vs dernière`;
+    document.getElementById('metricTrend1').textContent = `${state.videos.length} sessions complétées`;
+  }
+}
+
+function setAgent(id, status, text) {
+  const el = document.getElementById(id+'Status');
+  const textEl = document.getElementById(id+'StatusText');
+  if (!el || !textEl) return;
+  el.className = `agent-status status-${status}`;
+  textEl.textContent = text;
+  const card = document.getElementById('card-'+id);
+  if (card) {
+    card.className = `worker-card${status==='working'?' active':status==='done'?' done-card':''}`;
+  }
+}
+
+function setProgress(id, pct) {
+  const el = document.getElementById(id+'Prog');
+  if (el) el.style.width = pct+'%';
+}
+
+function log(target, msg, cls='') {
+  const el = document.getElementById(target);
+  if (!el) return;
+  const div = document.createElement('div');
+  div.className = 'line' + (cls?' '+cls:'');
+  div.textContent = '» ' + msg;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+// === API KEY MANAGEMENT ===
+function getApiKey() {
+  return localStorage.getItem('viralStudioApiKey') || '';
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-ant')) {
+    alert('Clé invalide. Elle doit commencer par sk-ant-…');
+    return;
+  }
+  localStorage.setItem('viralStudioApiKey', key);
+  document.getElementById('apiKeyInput').value = key.slice(0,12) + '••••••••••••••••••••';
+  document.getElementById('apiBanner').classList.add('valid');
+  document.getElementById('apiTitle').textContent = '✓ Clé API sauvegardée';
+  document.getElementById('apiKeyInput').style.borderColor = 'var(--green)';
+}
+
+function checkApiKey() {
+  const key = getApiKey();
+  if (key) {
+    document.getElementById('apiKeyInput').value = key.slice(0,12) + '••••••••••••••••••••';
+    document.getElementById('apiBanner').classList.add('valid');
+    document.getElementById('apiTitle').textContent = '✓ Clé API connectée';
+    document.getElementById('apiKeyInput').style.borderColor = 'var(--green)';
+  }
+}
+
+// === CLAUDE API ===
+async function callClaude(systemPrompt, userPrompt, maxTokens=800) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error('Clé API manquante — entre ta clé sk-ant-… en haut de la page');
+  }
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "interleaved-thinking-2025-05-14"
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages:[{role:"user", content: userPrompt}]
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content.map(c=>c.text||'').join('');
+}
+
+async function startPipeline() {
+  if (state.running) return;
+  const topic = document.getElementById('topicInput').value.trim();
+  const platform = document.getElementById('platformSelect').value;
+  if (!topic) { alert('Entre un sujet !'); return; }
+
+  state.running = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('outputSection').style.display = 'none';
+
+  // Reset agents
+  ['sprint','voice','visual','editor'].forEach(a=>{
+    setAgent(a,'idle','Idle');
+    setProgress(a,0);
+    document.getElementById(a+'Output').textContent = 'En attente…';
+  });
+  document.getElementById('managerLog').innerHTML = '';
+
+  const memoire = state.insights.length > 0
+    ? `\n\nPATTERNS VIRAUX APPRIS (utilise-les):\n${state.insights.join('\n')}`
+    : '';
+
+  try {
+    // === MANAGER ===
+    setAgent('manager','working','Analyse…');
+    log('managerLog', `Mission reçue: "${topic}"`, 'new');
+    log('managerLog', `Plateforme: ${platform}`);
+    log('managerLog', 'Orchestration de l\'équipe en cours…');
+
+    const managerPlan = await callClaude(
+      `Tu es le Manager IA d'une équipe de production de vidéos virales. Tu analyses les sujets et distribues les tâches à ton équipe (Sprint, Voice, Visual, Editor). Tu es expert en viralité sur ${platform}.${memoire}`,
+      `Sujet: "${topic}"\nPlateforme: ${platform}\n\nAnalyse le potentiel viral de ce sujet et écris un brief de production en 3-4 lignes maximum. Identifie le hook principal, l'angle émotionnel et la durée idéale.`,
+      300
+    );
+    log('managerLog', 'Brief: ' + managerPlan, 'done');
+    setAgent('manager','done','Brief envoyé');
+    await sleep(500);
+
+    // === SPRINT AGENT ===
+    setAgent('sprint','working','Script en cours…');
+    document.getElementById('sprintOutput').textContent = 'Génération du script…';
+    log('managerLog', 'Agent Sprint → script & hooks');
+
+    const sprintResult = await callClaude(
+      `Tu es l'agent Sprint, expert en copywriting viral pour ${platform}. Tu écris des scripts courts et percutants qui font arrêter le scroll. Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks.${memoire}`,
+      `Sujet: "${topic}"\nBrief manager: ${managerPlan}\n\nGénère un JSON avec ces clés exactes:\n{"hooks":["hook1","hook2","hook3"],"hook_scores":[85,78,92],"script":"script complet 60-90 mots max","cta":"call to action final"}`,
+      600
+    );
+
+    let sprintData = {};
+    try {
+      const clean = sprintResult.replace(/```json|```/g,'').trim();
+      sprintData = JSON.parse(clean);
+    } catch(e) {
+      sprintData = {
+        hooks: ["Tu ne croiras jamais ça sur "+topic,"Ce que personne ne te dit sur "+topic,"3 faits fous sur "+topic],
+        hook_scores: [88,75,82],
+        script: sprintResult.slice(0,300),
+        cta: "Abonne-toi pour ne rien manquer !"
+      };
+    }
+    setProgress('sprint',100);
+    setAgent('sprint','done','Script ✓');
+    document.getElementById('sprintOutput').textContent = `${sprintData.hooks?.[0]?.slice(0,50)||'Script prêt'}…`;
+    await sleep(400);
+
+    // === VOICE + VISUAL (parallèle) ===
+    log('managerLog', 'Lancement parallèle: Voice + Visual');
+    setAgent('voice','working','Narration…');
+    setAgent('visual','working','Storyboard…');
+
+    const [voiceResult, visualResult] = await Promise.all([
+      callClaude(
+        `Tu es l'agent Voice, expert en narration pour vidéos virales ${platform}. Tu crées des directives de voix off précises et émotionnelles.`,
+        `Script: "${sprintData.script}"\n\nDonne des instructions de narration: ton, rythme, emphases, pauses dramatiques, énergie. Maximum 120 mots.`,
+        350
+      ),
+      callClaude(
+        `Tu es l'agent Visual, expert en direction artistique pour vidéos virales ${platform}. Tu génères des storyboards et prompts visuels percutants.`,
+        `Script: "${sprintData.script}"\n\nCrée un plan visuel scène par scène (5-7 scènes max). Pour chaque scène: description courte + prompt image IA. Format: Scène X: [description] | Prompt: [prompt]`,
+        450
+      )
+    ]);
+
+    setProgress('voice',100); setAgent('voice','done','Voice ✓');
+    setProgress('visual',100); setAgent('visual','done','Visual ✓');
+    document.getElementById('voiceOutput').textContent = voiceResult.slice(0,80)+'…';
+    document.getElementById('visualOutput').textContent = 'Storyboard prêt';
+    await sleep(400);
+
+    // === EDITOR ===
+    setAgent('editor','working','Montage…');
+    document.getElementById('editorOutput').textContent = 'Assemblage final…';
+    log('managerLog', 'Agent Editor → montage final');
+
+    const editorResult = await callClaude(
+      `Tu es l'agent Editor, expert en montage vidéo viral pour ${platform}. Tu assembles tous les éléments pour maximiser la rétention et le partage.`,
+      `Script: ${sprintData.script}\nVoix: ${voiceResult}\nVisuels: ${visualResult}\n\nDonne des instructions de montage précises: rythme des coupes, effets, textes à l'écran, musique, transitions. Maximum 150 mots.`,
+      400
+    );
+
+    // Score viral
+    const scoreResult = await callClaude(
+      `Tu es un expert en viralité ${platform}. Donne UNIQUEMENT un nombre entier entre 1 et 100 représentant le score de viralité potentiel. Rien d'autre.`,
+      `Évalue ce contenu:\nHook: ${sprintData.hooks?.[0]}\nScript: ${sprintData.script}\nPlateforme: ${platform}`,
+      20
+    );
+    const score = parseInt(scoreResult.match(/\d+/)?.[0] || '72');
+
+    // Apprentissage
+    const learningResult = await callClaude(
+      `Tu es l'agent d'apprentissage. Analyse cette production et extrais 1-2 patterns ou insights viraux à retenir pour les prochaines vidéos. Sois très concis (max 20 mots par insight). Format: une phrase par ligne.`,
+      `Topic: ${topic}\nHook: ${sprintData.hooks?.[0]}\nScore: ${score}/100\nPlateforme: ${platform}`,
+      150
+    );
+    const newInsights = learningResult.split('\n').filter(l=>l.trim().length>5).slice(0,2);
+    state.insights = [...state.insights, ...newInsights].slice(-15);
+
+    setProgress('editor',100); setAgent('editor','done','Montage ✓');
+    document.getElementById('editorOutput').textContent = 'Vidéo assemblée !';
+    log('managerLog', `Score viral: ${score}/100`, score>80?'done':'new');
+    log('managerLog', `Apprentissage: +${newInsights.length} nouveaux patterns`, 'done');
+    setAgent('manager','done','Mission accomplie ✓');
+
+    // Save video
+    state.videos.push({
+      topic, platform, score,
+      date: new Date().toLocaleDateString('fr-FR'),
+      tag: score>=80?'Viral':score>=60?'Bon':'À améliorer'
+    });
+    state.totalScore = score;
+    saveState();
+
+    // RENDER OUTPUT
+    document.getElementById('outputSection').style.display = 'block';
+    document.getElementById('platformBadges').innerHTML =
+      `<span class="platform-badge">📱 ${platform}</span><span class="platform-badge" style="color:var(--cyan)">⚡ Score: ${score}/100</span>`;
+
+    const hooksEl = document.getElementById('hooksOutput');
+    hooksEl.innerHTML = (sprintData.hooks||[]).map((h,i)=>`
+      <div class="hook-item">${h}
+        <div class="hook-score">★ Score estimé: ${sprintData.hook_scores?.[i]||70}/100</div>
+      </div>
+    `).join('');
+
+    document.getElementById('scriptOutput').textContent = (sprintData.script||'') + '\n\n' + (sprintData.cta||'');
+    document.getElementById('voiceOutput2').textContent = voiceResult;
+    document.getElementById('visualOutput2').textContent = visualResult;
+    document.getElementById('editorOutput2').textContent = editorResult;
+
+    document.getElementById('outputSection').scrollIntoView({behavior:'smooth', block:'start'});
+    renderState();
+
+  } catch(err) {
+    log('managerLog', 'Erreur: ' + err.message, 'error');
+    setAgent('manager','error','Erreur');
+    console.error(err);
+  }
+
+  state.running = false;
+  document.getElementById('runBtn').disabled = false;
+}
+
+function copyScript() {
+  const s = document.getElementById('scriptOutput').textContent;
+  navigator.clipboard.writeText(s).then(()=>{
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✓ Copié !';
+    setTimeout(()=>btn.textContent='Copier script',2000);
+  });
+}
+
+loadState();
+checkApiKey();
+</script>
+</body>
+</html>
